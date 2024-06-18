@@ -1,0 +1,133 @@
+package org.example;
+
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.colors.DeviceRgb;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Image;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+public class PdfGenerator {
+
+    public static void main(String[] args) {
+
+        String dest = "output.pdf";
+        String price = "800 000 руб.";  // Новая цена
+        String project = "Кухня Канти + Примавера фабрики Aboba";
+        String imgPath = "kitchen.jpg";  // Путь к изображению в ресурсах
+
+        try {
+
+            InputStream resource = PdfGenerator.class.getClassLoader().getResourceAsStream("zov2slidesv2.pdf");
+            if (resource == null) {
+                throw new IOException("Resource not found: zov2slides.pdf");
+            }
+
+            InputStream fontResource = PdfGenerator.class.getClassLoader().getResourceAsStream("font/Montserrat-Bold.ttf");
+            if (fontResource == null) {
+                throw new IOException("Resource not found: Montserrat-Bold.ttf");
+            }
+
+            InputStream imageResource = PdfGenerator.class.getClassLoader().getResourceAsStream(imgPath);
+            if (imageResource == null) {
+                throw new IOException("Resource not found: " + imgPath);
+            }
+
+            PdfDocument pdfDoc = new PdfDocument(new PdfReader(resource), new PdfWriter(dest));
+            PdfFont font = PdfFontFactory.createFont(fontResource.readAllBytes(), PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+            Document document = new Document(pdfDoc);
+
+            // Создаем PdfCanvas для второй страницы
+            PdfCanvas pdfCanvas = new PdfCanvas(pdfDoc.getPage(2));
+
+            // Получаем ширину страницы
+            float pageWidth = pdfDoc.getPage(2).getPageSize().getWidth();
+
+            // Размер шрифта для ЦЕНЫ
+            float fontSize = 35;
+
+            // Размер шрифта для ПРОЕКТА
+            float fontSizeProject = 35;
+
+            // Получаем ширину текста с новым размером шрифта (цена)
+            float textWidth = font.getWidth(price, fontSize);
+
+            // Получаем ширину текста с новым размером шрифта (название проекта)
+            float textWidthProject = font.getWidth(project, fontSizeProject);
+
+            // Координаты для новой цены (пример координат по y, нужно уточнить)
+            float x = (pageWidth - textWidth) / 2;
+            float y = 35;  // Замените на нужную координату по y
+
+            // Координаты для Проекта (пример координат по y, нужно уточнить)
+            float xp = (pageWidth - textWidthProject) / 2;
+            float yp = 655;  // Замените на нужную координату по y
+
+            // Устанавливаем цвет и шрифт для текста
+            pdfCanvas.setFillColor(new DeviceRgb(255, 255, 255));
+            pdfCanvas.setFontAndSize(font, fontSize);
+
+            // Добавляем текст поверх второй страницы
+            pdfCanvas.beginText();
+            pdfCanvas.moveText(x, y);
+            pdfCanvas.showText(price);
+            pdfCanvas.endText();
+
+
+            // Устанавливаем цвет и шрифт для текста
+            pdfCanvas.setFillColor(new DeviceRgb(255, 255, 255));
+            pdfCanvas.setFontAndSize(font, fontSizeProject);
+
+            // Добавляем текст поверх второй страницы
+            pdfCanvas.beginText();
+            pdfCanvas.moveText(xp, yp);
+            pdfCanvas.showText(project);
+            pdfCanvas.endText();
+
+            // Вставляем изображение
+            byte[] imgBytes = imageResource.readAllBytes();
+            ImageData imageData = ImageDataFactory.create(imgBytes);
+            Image image = new Image(imageData);
+
+            // Координаты и размер изображения
+            float imgX = 53;
+            float imgY = 87;
+            float imgWidth = 920;
+            float imgHeight = 517.5F;
+
+            // Размер окантовки
+            float borderThickness = 5f;
+
+            // Координаты и размер белого прямоугольника (окантовки)
+            float rectX = imgX - borderThickness;
+            float rectY = imgY - borderThickness;
+            float rectWidth = imgWidth + 2 * borderThickness;
+            float rectHeight = imgHeight + 2 * borderThickness;
+
+            // Рисуем белый прямоугольник
+            pdfCanvas.setFillColor(ColorConstants.WHITE);
+            pdfCanvas.rectangle(rectX, rectY, rectWidth, rectHeight);
+            pdfCanvas.fill();
+
+            // Устанавливаем позицию и размер изображения
+            image.setFixedPosition(2, imgX, imgY);
+            image.scaleAbsolute(imgWidth, imgHeight);
+
+            // Добавляем изображение на документ
+            document.add(image);
+
+            // Закрываем документ
+            document.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
